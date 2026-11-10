@@ -4,7 +4,7 @@ import requests
 
 app = Flask(__name__)
 
-OPENROUTER_API_KEY = os.environ.get("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")
+OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY")
 
 @app.route("/", methods=["POST"])
 def alexa_endpoint():
@@ -21,12 +21,11 @@ def alexa_endpoint():
         intent_name = data["request"]["intent"].get("name")
         slots = data["request"]["intent"].get("slots", {})
         
-        # Pull text from the slot, handling missing or empty values safely
+        # Pull text from the slot safely
         user_query = None
         if "query" in slots and "value" in slots["query"]:
             user_query = slots["query"]["value"]
         
-        # If the slot is empty, check if you just said the invocation phrase alone
         if not user_query:
             speech = "Your agent is listening. Please ask me to or about something."
         else:
@@ -36,9 +35,8 @@ def alexa_endpoint():
                     "Content-Type": "application/json"
                 }
                 payload = {
-    "model": "openrouter/free", #  PASTE THIS INSTEAD
-    "messages": [{"role": "user", "content": user_query}]
-}
+                    "model": "openrouter/free",
+                    "messages": [{"role": "user", "content": user_query}]
                 }
 
                 cloud_response = requests.post(
@@ -49,9 +47,8 @@ def alexa_endpoint():
 
                 response_json = cloud_response.json()
                 
-                # Check for explicit OpenRouter choices response structure
                 if "choices" in response_json and len(response_json["choices"]) > 0:
-                    speech = response_json["choices"][0]["message"]["content"]
+                    speech = response_json["choices"]["message"]["content"]
                 else:
                     speech = "The cloud AI model returned an empty response."
             except Exception as e:
