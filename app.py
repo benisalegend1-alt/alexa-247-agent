@@ -36,8 +36,9 @@ def alexa_endpoint():
                     "Content-Type": "application/json"
                 }
                 payload = {
-                  "model": "meta-llama/llama-3.2-3b-instruct:free",
-                    "messages": [{"role": "user", "content": user_query}]
+    "model": "openrouter/free", #  PASTE THIS INSTEAD
+    "messages": [{"role": "user", "content": user_query}]
+}
                 }
 
                 cloud_response = requests.post(
