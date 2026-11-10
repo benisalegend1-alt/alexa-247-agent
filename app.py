@@ -1,70 +1,79 @@
-import os
 from flask import Flask, request, jsonify
 import requests
 
 app = Flask(__name__)
 
-GROQ_API_KEY = os.environ.get("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")
+# Hardcoded API Key (Stripped of any accidental whitespace)
+GROQ_API_KEY = "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".strip()
 
 @app.route("/", methods=["POST"])
 def alexa_endpoint():
-    data = request.get_json()
-    request_type = data.get("request", {}).get("type")
-
-    # Fallback message
-    speech = "I encountered an error processing your request."
+    data = request.get_json(silent=True) or {}
+    request_type = data.get("request", {}).get("type", "")
 
     if request_type == "LaunchRequest":
-        speech = "Your Groq powered AI agent is online and ready. What can I do for you?"
+        speech = "Your Groq AI agent is online and ready. Ask me anything."
     
     elif request_type == "IntentRequest":
-        slots = data["request"]["intent"].get("slots", {})
-        
-        user_query = None
-        if "query" in slots and "value" in slots["query"]:
-            user_query = slots["query"]["value"]
+        slots = data.get("request", {}).get("intent", {}).get("slots", {})
+        user_query = slots.get("query", {}).get("value", "")
         
         if not user_query:
-            speech = "Your agent is listening. Please ask me to or about something."
+            speech = "I am listening. Try saying, ask my agent about, followed by your question."
         else:
             try:
                 headers = {
                     "Authorization": f"Bearer {GROQ_API_KEY}",
                     "Content-Type": "application/json"
                 }
-                # Updated to use Groq's official active free model
                 payload = {
                     "model": "llama-3.3-70b-versatile",
-                    "messages": [{"role": "user", "content": user_query}]
+                    "messages": [
+                        {
+                            "role": "system", 
+                            "content": "You are a helpful voice assistant on an Amazon Echo Dot. Keep your answers clear, conversational, and concise (under 3 sentences) so they sound natural when read aloud."
+                        },
+                        {
+                            "role": "user", 
+                            "content": user_query
+                        }
+                    ]
                 }
 
                 cloud_response = requests.post(
-                    "https://api.groq.com/openai/v1/chat/completions",
+                    "https://groq.com",
                     headers=headers,
-                    json=payload
+                    json=payload,
+                    timeout=8
                 )
 
                 if cloud_response.status_code != 200:
-                    speech = f"Groq network error, status code: {cloud_response.status_code}"
+                    speech = f"Groq returned error code {cloud_response.status_code}."
                 else:
                     response_json = cloud_response.json()
+                    choices = response_json.get("choices", [])
                     
-                    if "error" in response_json:
-                        error_msg = response_json["error"].get("message", "API Error")
-                        speech = f"Groq cloud error: {error_msg}"
-                    elif "choices" in response_json and len(response_json["choices"]) > 0:
-                        speech = response_json["choices"]["message"]["content"]
+                    if len(choices) > 0:
+                        raw_text = choices[0].get("message", {}).get("content", "")
+                        # Remove markdown asterisks/symbols so Alexa doesn't read "asterisk asterisk" out loud
+                        speech = raw_text.replace("*", "").replace("#", "")
                     else:
-                        speech = "The Groq model returned an unexpected response structure."
+                        speech = "The AI model returned an empty response."
+                        
+            except requests.exceptions.Timeout:
+                speech = "The AI took too long to respond. Please try asking again."
             except Exception as e:
-                speech = f"Internal processing error occurred: {str(e)}"
+                speech = f"A server error occurred: {str(e)}"
     else:
         speech = "Goodbye."
 
     return jsonify({
         "version": "1.0",
         "response": {
-            "outputSpeech": {"type": "PlainText", "text": speech},
+            "outputSpeech": {
+                "type": "PlainText", 
+                "text": speech
+            },
             "shouldEndSession": False if request_type == "LaunchRequest" else True
         }
     })
