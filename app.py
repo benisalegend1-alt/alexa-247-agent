@@ -18,7 +18,6 @@ def alexa_endpoint():
         speech = "Your cloud-powered AI agent is online and ready. What can I do for you?"
     
     elif request_type == "IntentRequest":
-        intent_name = data["request"]["intent"].get("name")
         slots = data["request"]["intent"].get("slots", {})
         
         # Pull text from the slot safely
@@ -30,12 +29,11 @@ def alexa_endpoint():
             speech = "Your agent is listening. Please ask me to or about something."
         else:
             try:
-                # OpenRouter requires an application title and referer header for tracking free models
                 headers = {
                     "Authorization": f"Bearer {OPENROUTER_API_KEY}",
                     "Content-Type": "application/json",
                     "HTTP-Referer": "https://render.com",
-                    "X-Title": "Alexa Personal Agent"
+                    "X-Title": "Alexa Agent"
                 }
                 payload = {
                     "model": "openrouter/free",
@@ -43,20 +41,26 @@ def alexa_endpoint():
                 }
 
                 cloud_response = requests.post(
-                    "https://openrouter.ai",
+                    "https://openrouter.ai/api/v1/chat/completions",
                     headers=headers,
                     json=payload
                 )
 
                 response_json = cloud_response.json()
                 
-                if "choices" in response_json and len(response_json["choices"]) > 0:
-                    speech = response_json["choices"]["message"]["content"]
+                # Dynamic Error Debugger: If OpenRouter returns an error, Alexa will read it!
+                if "error" in response_json:
+                    error_msg = response_json["error"].get("message", "Unknown API error")
+                    print(f"OpenRouter API Error: {error_msg}")
+                    speech = f"OpenRouter cloud error: {error_msg}"
+                elif "choices" in response_json and len(response_json["choices"]) > 0:
+                    speech = response_json["choices"][0]["message"]["content"]
                 else:
-                    speech = "The cloud AI model returned an empty response."
+                    print(f"Unexpected raw response structure: {response_json}")
+                    speech = "The cloud model returned an unexpected payload structure."
             except Exception as e:
-                print(f"Error occurred: {e}")
-                speech = "I could not communicate with the cloud AI engine."
+                print(f"Server Script Crash Error: {e}")
+                speech = f"Internal server script error occurred: {str(e)}"
     else:
         speech = "Goodbye."
 
