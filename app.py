@@ -3,7 +3,7 @@ import requests
 
 app = Flask(__name__)
 
-# Hardcoded API Key (Stripped of any accidental whitespace)
+# Your validated Groq API Key
 GROQ_API_KEY = "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".strip()
 
 @app.route("/", methods=["POST"])
@@ -27,11 +27,12 @@ def alexa_endpoint():
                     "Content-Type": "application/json"
                 }
                 payload = {
-                    "model": "llama-3.3-70b-versatile",
+                    # Swapped to a rock-solid, ultra-fast voice compatible model identifier
+                    "model": "llama3-8b-8192",
                     "messages": [
                         {
                             "role": "system", 
-                            "content": "You are a helpful voice assistant on an Amazon Echo Dot. Keep your answers clear, conversational, and concise (under 3 sentences) so they sound natural when read aloud."
+                            "content": "You are a helpful voice assistant on an Amazon Echo Dot. Keep your answers clear, conversational, and under 3 sentences."
                         },
                         {
                             "role": "user", 
@@ -44,26 +45,25 @@ def alexa_endpoint():
                     "https://groq.com",
                     headers=headers,
                     json=payload,
-                    timeout=8
+                    timeout=10
                 )
 
                 if cloud_response.status_code != 200:
-                    speech = f"Groq returned error code {cloud_response.status_code}."
+                    speech = f"Groq network response error code {cloud_response.status_code}."
                 else:
                     response_json = cloud_response.json()
                     choices = response_json.get("choices", [])
                     
                     if len(choices) > 0:
                         raw_text = choices[0].get("message", {}).get("content", "")
-                        # Remove markdown asterisks/symbols so Alexa doesn't read "asterisk asterisk" out loud
                         speech = raw_text.replace("*", "").replace("#", "")
                     else:
                         speech = "The AI model returned an empty response."
                         
             except requests.exceptions.Timeout:
-                speech = "The AI took too long to respond. Please try asking again."
+                speech = "The cloud server took too long to think. Please ask me again."
             except Exception as e:
-                speech = f"A server error occurred: {str(e)}"
+                speech = f"A local server error occurred: {str(e)}"
     else:
         speech = "Goodbye."
 
