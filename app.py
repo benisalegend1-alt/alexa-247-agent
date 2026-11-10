@@ -30,9 +30,12 @@ def alexa_endpoint():
             speech = "Your agent is listening. Please ask me to or about something."
         else:
             try:
+                # OpenRouter requires an application title and referer header for tracking free models
                 headers = {
                     "Authorization": f"Bearer {OPENROUTER_API_KEY}",
-                    "Content-Type": "application/json"
+                    "Content-Type": "application/json",
+                    "HTTP-Referer": "https://render.com",
+                    "X-Title": "Alexa Personal Agent"
                 }
                 payload = {
                     "model": "openrouter/free",
