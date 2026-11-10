@@ -28,26 +28,24 @@ def alexa_endpoint():
             speech = "Your agent is listening. Please ask me to or about something."
         else:
             try:
-                # Added User-Agent to bypass cloudflare blocks
                 headers = {
                     "Authorization": f"Bearer {GROQ_API_KEY}",
-                    "Content-Type": "application/json",
-                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+                    "Content-Type": "application/json"
                 }
+                # Updated to use Groq's official active free model
                 payload = {
-                    "model": "llama-3.1-8b-instant",
+                    "model": "llama-3.3-70b-versatile",
                     "messages": [{"role": "user", "content": user_query}]
                 }
 
                 cloud_response = requests.post(
-                    "https://groq.com",
+                    "https://api.groq.com/openai/v1/chat/completions",
                     headers=headers,
                     json=payload
                 )
 
-                # Catch empty or non-JSON connection rejections instantly
                 if cloud_response.status_code != 200:
-                    speech = f"Groq connectivity error, status code: {cloud_response.status_code}"
+                    speech = f"Groq network error, status code: {cloud_response.status_code}"
                 else:
                     response_json = cloud_response.json()
                     
