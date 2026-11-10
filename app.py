@@ -28,34 +28,38 @@ def alexa_endpoint():
             speech = "Your agent is listening. Please ask me to or about something."
         else:
             try:
+                # Added User-Agent to bypass cloudflare blocks
                 headers = {
                     "Authorization": f"Bearer {GROQ_API_KEY}",
-                    "Content-Type": "application/json"
+                    "Content-Type": "application/json",
+                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
                 }
                 payload = {
-                    "model": "llama-3.1-8b-instant", # Groq's lightning-fast, free Llama model
+                    "model": "llama-3.1-8b-instant",
                     "messages": [{"role": "user", "content": user_query}]
                 }
 
-                # Direct call to Groq's official API endpoint
                 cloud_response = requests.post(
                     "https://groq.com",
                     headers=headers,
                     json=payload
                 )
 
-                response_json = cloud_response.json()
-                
-                # Debug error handling
-                if "error" in response_json:
-                    error_msg = response_json["error"].get("message", "API Error")
-                    speech = f"Groq cloud error: {error_msg}"
-                elif "choices" in response_json and len(response_json["choices"]) > 0:
-                    speech = response_json["choices"]["message"]["content"]
+                # Catch empty or non-JSON connection rejections instantly
+                if cloud_response.status_code != 200:
+                    speech = f"Groq connectivity error, status code: {cloud_response.status_code}"
                 else:
-                    speech = "The Groq model returned an unexpected response structure."
+                    response_json = cloud_response.json()
+                    
+                    if "error" in response_json:
+                        error_msg = response_json["error"].get("message", "API Error")
+                        speech = f"Groq cloud error: {error_msg}"
+                    elif "choices" in response_json and len(response_json["choices"]) > 0:
+                        speech = response_json["choices"]["message"]["content"]
+                    else:
+                        speech = "The Groq model returned an unexpected response structure."
             except Exception as e:
-                speech = f"Internal server error occurred: {str(e)}"
+                speech = f"Internal processing error occurred: {str(e)}"
     else:
         speech = "Goodbye."
 
