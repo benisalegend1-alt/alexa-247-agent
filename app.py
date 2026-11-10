@@ -36,7 +36,7 @@ def alexa_endpoint():
                     "Content-Type": "application/json"
                 }
                 payload = {
-                    "model": "meta-llama/llama-3.1-8b-instruct:free",
+                  "model": "meta-llama/llama-3.2-3b-instruct:free",
                     "messages": [{"role": "user", "content": user_query}]
                 }
 
