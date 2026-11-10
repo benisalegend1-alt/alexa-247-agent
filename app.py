@@ -27,7 +27,7 @@ def alexa_endpoint():
             try:
                 # Use the official client.chat.completions.create method to completely avoid 405 errors
                 chat_completion = client.chat.completions.create(
-                    model="Llama 3.3 70B",
+                    model="llama-3.3-70b-versatile",
                     messages=[
                         {
                             "role": "system", 
