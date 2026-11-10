@@ -4,7 +4,7 @@ import requests
 
 app = Flask(__name__)
 
-OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY")
+OPENROUTER_API_KEY = os.environ.get("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")
 
 @app.route("/", methods=["POST"])
 def alexa_endpoint():
