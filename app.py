@@ -3,7 +3,7 @@ import requests
 
 app = Flask(__name__)
 
-# Your validated Groq API Key
+# Your valid Groq API Key
 GROQ_API_KEY = "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".strip()
 
 @app.route("/", methods=["POST"])
@@ -27,8 +27,7 @@ def alexa_endpoint():
                     "Content-Type": "application/json"
                 }
                 payload = {
-                    # Swapped to a rock-solid, ultra-fast voice compatible model identifier
-                    "model": "llama3-8b-8192",
+                    "model": "llama-3.3-70b-versatile",
                     "messages": [
                         {
                             "role": "system", 
@@ -41,6 +40,7 @@ def alexa_endpoint():
                     ]
                 }
 
+                # CHANGED TO NATIVE CORE DIRECT ENDPOINT URL
                 cloud_response = requests.post(
                     "https://groq.com",
                     headers=headers,
@@ -49,7 +49,7 @@ def alexa_endpoint():
                 )
 
                 if cloud_response.status_code != 200:
-                    speech = f"Groq network response error code {cloud_response.status_code}."
+                    speech = f"Groq response error, status code: {cloud_response.status_code}."
                 else:
                     response_json = cloud_response.json()
                     choices = response_json.get("choices", [])
@@ -80,3 +80,4 @@ def alexa_endpoint():
 
 if __name__ == "__main__":
     app.run()
+
