@@ -13,6 +13,11 @@ client = Groq(
 # Replace this with your secret topic name from the ntfy app on your phone
 NTFY_TOPIC = "my_secret_alexa_groq_98234"
 
+@app.route("/ping", methods=["GET"])
+def ping():
+    """Lightweight health check endpoint to keep Render awake."""
+    return "OK", 200
+
 def send_to_phone(text, title="Alexa AI Agent"):
     """Sends a push notification to your phone via ntfy.sh using built-in urllib."""
     try:
@@ -189,4 +194,5 @@ def alexa_endpoint():
     })
 
 if __name__ == "__main__":
-    app.run()
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
