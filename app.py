@@ -1,5 +1,5 @@
 import os
-import requests
+import urllib.request
 from flask import Flask, request, jsonify
 from groq import Groq
 
@@ -14,18 +14,19 @@ client = Groq(
 NTFY_TOPIC = "my_secret_alexa_groq_98234"
 
 def send_to_phone(text, title="Alexa AI Agent"):
-    """Sends a push notification to your phone via ntfy.sh."""
+    """Sends a push notification to your phone via ntfy.sh using built-in urllib."""
     try:
-        requests.post(
+        req = urllib.request.Request(
             f"https://ntfy.sh{NTFY_TOPIC}",
             data=text.encode("utf-8"),
             headers={
                 "Title": title,
                 "Priority": "high"
             },
-            timeout=3
+            method="POST"
         )
-        return True
+        with urllib.request.urlopen(req, timeout=3) as response:
+            return 200 <= response.status < 300
     except Exception:
         return False
 
@@ -121,7 +122,7 @@ def alexa_endpoint():
                             timeout=6.5
                         )
 
-                        phone_text = (chat_completion.choices.message.content or "").replace("*", "").replace("#", "").strip()
+                        phone_text = (chat_completion.choices[0].message.content or "").replace("*", "").replace("#", "").strip()
                         
                         if send_to_phone(phone_text, title="Alexa Note"):
                             speech = "I've sent that to your phone."
@@ -154,7 +155,7 @@ def alexa_endpoint():
                         timeout=6.5
                     )
 
-                    raw_text = chat_completion.choices.message.content or ""
+                    raw_text = chat_completion.choices[0].message.content or ""
                     speech = raw_text.replace("*", "").replace("#", "").strip()
 
                     # Save turn into Alexa's session memory
